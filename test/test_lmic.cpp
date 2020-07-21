@@ -61,6 +61,46 @@ void test_os_rmsbf4(void) {
   TEST_ASSERT_EQUAL(0x10A0203, result);
 }
 
+void test_os_wlsbf2(void) {
+  u2_t data = 0xA1;
+  u1_t zero[] = { 0x0 , 0x0, 0x0 };
+  xref2u1_t buff = zero;
+  os_wlsbf2(buff, data);
+  u1_t actual[] = { 0xA1, 0x0, 0x0};
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(buff, actual, 3);
+}
+
+void test_os_wlsbf4(void) {
+  u4_t data = 0xa12c;
+  u1_t zero[] = { 0x0 , 0x0, 0x0, 0x0 };
+  xref2u1_t buff = zero;
+  os_wlsbf4(buff, data);
+  u1_t actual[] = { 0x2c, 0xa1, 0x0, 0x0 };
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(buff, actual, 4);
+}
+
+void test_os_wmsbf4(void) {
+  u4_t data = 0xa12c;
+  u1_t zero[] = { 0x0 , 0x0, 0x0, 0x0 };
+  xref2u1_t buff = zero;
+  os_wmsbf4(buff, data);
+  u1_t actual[] = { 0x0, 0x0, 0xa1, 0x2c };
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(buff, actual, 4);
+}
+
+void test_os_crc16(void) {
+  u1_t data[] = { 0x0 , 0x0, 0x0, 0x0 };
+  xref2u1_t buff = data;
+  u2_t result = os_crc16(buff, 4);
+  TEST_ASSERT_EQUAL(0x0, result);
+}
+
+void test_os_crc16_nonZero(void) {
+  u1_t data[] = { 0x1 , 0x2, 0x1, 0x3 };
+  xref2u1_t buff = data;
+  u2_t result = os_crc16(buff, 4);
+  TEST_ASSERT_EQUAL(0x1B86, result);
+}
 
 void setup() {
   delay(2000);
@@ -70,6 +110,11 @@ void setup() {
   RUN_TEST(test_os_rlsbf2);
   RUN_TEST(test_os_rlsbf4);
   RUN_TEST(test_os_rmsbf4);
+  RUN_TEST(test_os_wlsbf2);
+  RUN_TEST(test_os_wlsbf4);
+  RUN_TEST(test_os_wmsbf4);
+  RUN_TEST(test_os_crc16);
+  RUN_TEST(test_os_crc16_nonZero);
 
   UNITY_END(); // stop unit testing
 }
