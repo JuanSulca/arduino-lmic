@@ -189,7 +189,7 @@ void setup() {
 
   UNITY_BEGIN();    // IMPORTANT LINE!
 
-  /*RUN_TEST(test_os_rlsbf2);
+  RUN_TEST(test_os_rlsbf2);
   RUN_TEST(test_os_rlsbf4);
   RUN_TEST(test_os_rmsbf4);
   RUN_TEST(test_os_wlsbf2);
@@ -203,7 +203,7 @@ void setup() {
   RUN_TEST(test_aes_appendMic0);
   RUN_TEST(test_aes_verifyMic);
   RUN_TEST(test_aes_verifyMic0);
-  RUN_TEST(test_aes_encrypt);*/
+  RUN_TEST(test_aes_encrypt);
   RUN_TEST(test_aes_cipher);
 
   UNITY_END(); // stop unit testing
