@@ -184,6 +184,30 @@ void test_aes_cipher(void) {
   TEST_ASSERT_EQUAL_UINT8_ARRAY(actual, pdu, 16);
 }
 
+void test_getSensitivity_SF7(void) {
+  rps_t rps = 0x1;
+  int result = getSensitivity(rps);
+  TEST_ASSERT_EQUAL_INT(-127, result);
+}
+
+void test_getSensitivity_SF10(void) {
+  rps_t rps = 0x4;
+  int result = getSensitivity(rps);
+  TEST_ASSERT_EQUAL_INT(-135, result);
+}
+
+void test_getSensitivity_SFK(void) {
+  rps_t rps = 0x0;
+  int result = getSensitivity(rps);
+  TEST_ASSERT_EQUAL_INT(-109, result);
+}
+
+void test_getSensitivity_SF8(void) {
+  rps_t rps = 0x2;
+  int result = getSensitivity(rps);
+  TEST_ASSERT_EQUAL_INT(-129, result);
+}
+
 void setup() {
   delay(2000);
 
@@ -205,6 +229,10 @@ void setup() {
   RUN_TEST(test_aes_verifyMic0);
   RUN_TEST(test_aes_encrypt);
   RUN_TEST(test_aes_cipher);
+  RUN_TEST(test_getSensitivity_SF7);
+  RUN_TEST(test_getSensitivity_SF10);
+  RUN_TEST(test_getSensitivity_SFK);
+  RUN_TEST(test_getSensitivity_SF8);
 
   UNITY_END(); // stop unit testing
 }
