@@ -506,8 +506,11 @@ struct lmic_t {
 
     u4_t        netid;        // current network id (~0 - none)
     devaddr_t   devaddr;
-    u4_t        seqnoDn;      // device level down stream seqno
-    u4_t        seqnoUp;
+    u4_t        seqnoDn;      // device level down stream seqno REMOVE
+    u4_t        seqnoUp;      // REMOVE
+    u4_t        fCntUp;       // new Counters
+    u4_t        nFCntDown;
+    u4_t        aFCntDown;
     u4_t        dn2Freq;
 
 #if !defined(DISABLE_BEACONS)
@@ -543,6 +546,7 @@ struct lmic_t {
     rps_t       rps;            // radio parameter selections: SF, BW, CodingRate, NoCrc, implicit hdr
     u2_t        opmode;         // engineUpdate() operating mode flags
     u2_t        devNonce;       // last generated nonce
+    u2_t        joinNonce;      // to store the last received joinNonce
 
     s2_t        adrAckReq;      // counter for link integrity tracking (LINK_CHECK_OFF=off)
 
@@ -567,6 +571,7 @@ struct lmic_t {
 				// needs to reduced by 3 dB.
     s1_t        lbt_dbmax;      // max permissible dB on our channel (eg -80)
 
+    u1_t        pend_resetInd;
     u1_t        txChnl;          // channel for next TX
     u1_t        globalDutyRate;  // max rate: 1/2^k
 
@@ -575,6 +580,9 @@ struct lmic_t {
     u1_t        datarate;     // current data rate
     u1_t        errcr;        // error coding rate (used for TX only)
     u1_t        rejoinCnt;    // adjustment for rejoin datarate
+    u2_t        rJcount0;     // rejoin counter 0 for LoRaWAN v1.1
+    u2_t        rJcount1;     // rejoin counter 1 for LoRaWAN v1.1
+    u1_t        rejoinType;   // rejoin request type for LoRaWAN v1.1
 
     u1_t        upRepeatCount;  // current up-repeat
     bit_t       initBandplanAfterReset; // cleared by LMIC_reset(), set by first join. See issue #244
@@ -589,8 +597,17 @@ struct lmic_t {
     // response data if piggybacked
     u1_t        pendMacData[LWAN_FCtrl_FOptsLen_MAX];
 
-    u1_t        nwkKey[16];   // network session key
+    // TODO: Remove unused keys
+    u1_t        nwkKey[16];   // network session key 
+    u1_t        nwkSEncKey[16];
+    u1_t        sNwkSIntKey[16];
+    u1_t        fNwkSIntKey[16];
+    // TODO: Remove unused keys
     u1_t        artKey[16];   // application router session key
+    u1_t        appSKey[16]; 
+
+    u1_t        jSIntKey[16]; //new join keys
+    u1_t        jSEncKey[16];
 
     u1_t        dnConf;       // dn frame confirm pending: LORA::FCT_ACK or 0
     u1_t        lastDnConf;   // downlink with seqnoDn-1 requested confirmation
@@ -664,7 +681,7 @@ void  LMIC_setAdrMode   (bit_t enabled);        // set ADR mode (if mobile turn 
 
 #if !defined(DISABLE_JOIN)
 bit_t LMIC_startJoining (void);
-void  LMIC_tryRejoin    (void);
+void  LMIC_tryRejoin    (u1_t rejoinType);
 void  LMIC_unjoin       (void);
 void  LMIC_unjoinAndRejoin (void);
 #endif
@@ -691,7 +708,8 @@ void  LMIC_stopPingable  (void);
 void  LMIC_setPingable   (u1_t intvExp);
 #endif
 
-void LMIC_setSession (u4_t netid, devaddr_t devaddr, xref2u1_t nwkKey, xref2u1_t artKey);
+void LMIC_setSession (u4_t netid, devaddr_t devaddr, xref2u1_t fNwkSIntKey,
+    xref2u1_t sNwkSIntKey, xref2u1_t nwkSEncKey, xref2u1_t appSKey);
 void LMIC_setLinkCheckMode (bit_t enabled);
 void LMIC_setClockError(u2_t error);
 

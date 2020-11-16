@@ -31,6 +31,7 @@
  *
  *******************************************************************************/
 
+#include <Arduino.h>
 #include <lmic.h>
 #include <hal/hal.h>
 #include <SPI.h>
@@ -53,18 +54,22 @@
 // first. When copying an EUI from ttnctl output, this means to reverse
 // the bytes. For TTN issued EUIs the last bytes should be 0xD5, 0xB3,
 // 0x70.
-static const u1_t PROGMEM APPEUI[8]={ FILLMEIN };
+static const u1_t PROGMEM APPEUI[8]={ 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8 };
 void os_getArtEui (u1_t* buf) { memcpy_P(buf, APPEUI, 8);}
 
 // This should also be in little endian format, see above.
-static const u1_t PROGMEM DEVEUI[8]={ FILLMEIN };
+static const u1_t PROGMEM DEVEUI[8]={ 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8 };
 void os_getDevEui (u1_t* buf) { memcpy_P(buf, DEVEUI, 8);}
 
 // This key should be in big endian format (or, since it is not really a
 // number but a block of memory, endianness does not really apply). In
 // practice, a key taken from ttnctl can be copied as-is.
-static const u1_t PROGMEM APPKEY[16] = { FILLMEIN };
+static const u1_t PROGMEM APPKEY[16] = { 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8 };
 void os_getDevKey (u1_t* buf) {  memcpy_P(buf, APPKEY, 16);}
+static const u1_t PROGMEM JoinEui[8] = { 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8 };
+void os_getJoinEui (u1_t* buf) { memcpy_P(buf, JoinEui, 8);}
+static const u1_t PROGMEM NwkKey[16] = { 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8 };
+void os_getNwkKey (u1_t* buf) { memcpy_P(buf, NwkKey, 16);}
 
 static uint8_t mydata[] = "Hello, world!";
 static osjob_t sendjob;

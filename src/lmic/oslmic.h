@@ -179,13 +179,23 @@ static inline int os_jobIsTimed(xref2osjob_t job) {
 
 #ifndef HAS_os_calls
 
-#ifndef os_getDevKey
+// TODO: Remove old get functions
+#ifndef os_getDevKey //remove
 void os_getDevKey (xref2u1_t buf);
 #endif
-#ifndef os_getArtEui
+#ifndef os_getAppKey // Appkey
+void os_getAppKey (xref2u1_t buf);
+#endif
+#ifndef os_getNwkKey // Nwkkey
+void os_getNwkKey (xref2u1_t buf);
+#endif
+#ifndef os_getArtEui //remove
 void os_getArtEui (xref2u1_t buf);
 #endif
-#ifndef os_getDevEui
+#ifndef os_getJoinEui
+void os_getJoinEui (xref2u1_t buf); // joinEUI
+#endif
+#ifndef os_getDevEui // devEUI
 void os_getDevEui (xref2u1_t buf);
 #endif
 #ifndef os_setCallback

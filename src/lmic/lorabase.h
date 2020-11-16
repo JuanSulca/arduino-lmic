@@ -520,6 +520,8 @@ enum {
 // MAC downlink commands
 enum {
     // Class A
+    MCMD_ResetInd = 0x01,
+    MCMD_ResetConf = 0x01,
     MCMD_LinkCheckAns = 0x02,       // u1:margin 0-254,255=unknown margin / u1:gwcnt         LinkCheckReq
     MCMD_LinkADRReq = 0x03,         // u1:DR/TXPow, u2:chmask, u1:chpage/repeat
     MCMD_DutyCycleReq = 0x04,       // u1:255 dead [7-4]:RFU, [3-0]:cap 2^-k

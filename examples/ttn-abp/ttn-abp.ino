@@ -34,6 +34,7 @@
  // References:
  // [feather] adafruit-feather-m0-radio-with-lora-module.pdf
 
+#include <Arduino.h>
 #include <lmic.h>
 #include <hal/hal.h>
 #include <SPI.h>
@@ -54,16 +55,20 @@
 
 // LoRaWAN NwkSKey, network session key
 // This should be in big-endian (aka msb).
-static const PROGMEM u1_t NWKSKEY[16] = { FILLMEIN };
+static const PROGMEM u1_t NWKSKEY[16] = { 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16 };
 
 // LoRaWAN AppSKey, application session key
 // This should also be in big-endian (aka msb).
-static const u1_t PROGMEM APPSKEY[16] = { FILLMEIN };
+static const u1_t PROGMEM APPSKEY[16] = { 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16 };
+static const PROGMEM u1_t fNwkSIntKey[16] = { 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16 };
+static const PROGMEM u1_t sNwkSIntKey[16] = { 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16 };
+static const PROGMEM u1_t nwkSEncKey[16] = { 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16 };
+static const PROGMEM u1_t appSKey[16] = { 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16 };
 
 // LoRaWAN end-device address (DevAddr)
 // See http://thethingsnetwork.org/wiki/AddressSpace
 // The library converts the address to network byte order as needed, so this should be in big-endian (aka msb) too.
-static const u4_t DEVADDR = FILLMEIN ; // <-- Change this address for every node!
+static const u4_t DEVADDR = 0xabc12 ; // <-- Change this address for every node!
 
 // These callbacks are only used in over-the-air activation, so they are
 // left empty here (we cannot leave them out completely unless
@@ -72,6 +77,8 @@ static const u4_t DEVADDR = FILLMEIN ; // <-- Change this address for every node
 void os_getArtEui (u1_t* buf) { }
 void os_getDevEui (u1_t* buf) { }
 void os_getDevKey (u1_t* buf) { }
+void os_getJoinEui (u1_t* buf) { }
+void os_getNwkKey (u1_t* buf) { }
 
 static uint8_t mydata[] = "Hello, world!";
 static osjob_t sendjob;
@@ -219,14 +226,21 @@ void setup() {
     // On AVR, these values are stored in flash and only copied to RAM
     // once. Copy them to a temporary buffer here, LMIC_setSession will
     // copy them into a buffer of its own again.
-    uint8_t appskey[sizeof(APPSKEY)];
-    uint8_t nwkskey[sizeof(NWKSKEY)];
-    memcpy_P(appskey, APPSKEY, sizeof(APPSKEY));
-    memcpy_P(nwkskey, NWKSKEY, sizeof(NWKSKEY));
-    LMIC_setSession (0x13, DEVADDR, nwkskey, appskey);
+    uint8_t appskey[sizeof(APPSKEY)]; //TODO: REMOVE
+    uint8_t nwkskey[sizeof(NWKSKEY)]; //TODO: REMOVE
+    uint8_t fnwksintKey[sizeof(fNwkSIntKey)];
+    uint8_t snwksintKey[sizeof(sNwkSIntKey)];
+    uint8_t nwksencKey[sizeof(nwkSEncKey)];
+    memcpy_P(appskey, APPSKEY, sizeof(APPSKEY)); //TODO: REMOVE
+    memcpy_P(nwkskey, NWKSKEY, sizeof(NWKSKEY)); //TODO: REMOVE
+    memcpy_P(fnwksintKey, fNwkSIntKey, sizeof(fNwkSIntKey));
+    memcpy_P(snwksintKey, sNwkSIntKey, sizeof(sNwkSIntKey));
+    memcpy_P(nwksencKey, nwkSEncKey, sizeof(nwkSEncKey));
+    memcpy_P(appskey, appSKey, sizeof(appSKey));
+    LMIC_setSession (0x13, DEVADDR, fnwksintKey, snwksintKey, nwksencKey, appskey);
     #else
     // If not running an AVR with PROGMEM, just use the arrays directly
-    LMIC_setSession (0x13, DEVADDR, NWKSKEY, APPSKEY);
+    LMIC_setSession (0x13, DEVADDR, fNwkSIntKey, sNwkSIntKey, nwkSEncKey, appSKey);
     #endif
 
     #if defined(CFG_eu868)

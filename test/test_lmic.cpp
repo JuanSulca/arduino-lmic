@@ -208,6 +208,14 @@ void test_getSensitivity_SF8(void) {
   TEST_ASSERT_EQUAL_INT(-129, result);
 }
 
+void test_aes_sessKeys(void) {
+  u2_t devnonce;
+  xref2cu1_t artnonce;
+  xref2u1_t nwkkey;
+  xref2u1_t artkey;
+  aes_sessKeys(devnonce, artnonce, nwkkey, artkey, 0x80);
+}
+
 void setup() {
   delay(2000);
 
