@@ -1699,11 +1699,11 @@ static bit_t processJoinAccept (void) {
                            e_.info2  = hdr + (dlen<<8)));
         return processJoinAccept_badframe();
     }
-    if( (LMIC.opmode & OP_REJOIN) == 0 ) { //when it is joining
+    if( (LMIC.opmode & OP_REJOIN) == 0 ) { //when it is rejoining
+        aes_encrypt_rejoin(LMIC.frame+1, dlen-1); //decrypt message
+    } else { //when is joining
         aes_joinKeys(LMIC.jSIntKey, LMIC.jSEncKey);
         aes_encrypt(LMIC.frame+1, dlen-1); //decrypt message
-    } else {
-        aes_encrypt_rejoin(LMIC.frame+1, dlen-1); //decrypt message
     }
     if( !aes_verifyMic0(LMIC.frame, dlen-4, LMIC.frame[OFF_JA_DLSET] && 0x80) ) {
         EV(specCond, ERR, (e_.reason = EV::specCond_t::JOIN_BAD_MIC,
