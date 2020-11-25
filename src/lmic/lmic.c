@@ -249,8 +249,7 @@ static void aes_cipher (xref2cu1_t key, u4_t devaddr, u4_t seqno, int dndir, xre
 }
 
 
-static void aes_sessKeys (u2_t devnonce, xref2cu1_t joinNonce, xref2u1_t nwkSEncKey, xref2u1_t appSKey, u1_t dl_setting) {
-    xref2u1_t fNwkSIntKey, sNwkSIntKey;
+static void aes_sessKeys (u2_t devnonce, xref2cu1_t joinNonce, xref2u1_t nwkSEncKey, xref2u1_t appSKey, xref2u1_t fNwkSIntKey, xref2u1_t sNwkSIntKey, u1_t dl_setting) {
     if((dl_setting & 0x80) == 0x80) { // LoRaWAN v1.1
         os_clearMem(fNwkSIntKey, 16);
         fNwkSIntKey[0] = 0x01;
@@ -677,10 +676,12 @@ static void stateJustJoined (bit_t abp) {
     if(abp) {
         LMIC.fCntUp      = 0;
         LMIC.nFCntDown   = 0;
+        LMIC.aFCntDown   = 0;
         LMIC.rejoinCnt   = 0;
     } else {
         LMIC.fCntUp      = 0;
         LMIC.nFCntDown   = 0;
+        LMIC.aFCntDown   = 0;
         LMIC.rejoinCnt   = 0;
     }
     LMIC.dnConf      = LMIC.lastDnConf  = LMIC.adrChanged = 0;
@@ -1740,7 +1741,7 @@ static bit_t processJoinAccept (void) {
     // already incremented when JOIN REQ got sent off
     //u1_t dl_setting = LMIC.frame[10];
     //LMIC.frame[0];
-    aes_sessKeys(LMIC.devNonce-1, &LMIC.frame[OFF_JA_ARTNONCE], LMIC.nwkKey, LMIC.artKey, LMIC.frame[OFF_JA_DLSET]);
+    aes_sessKeys(LMIC.devNonce-1, &LMIC.frame[OFF_JA_ARTNONCE], LMIC.nwkKey, LMIC.appSKey, LMIC.fNwkSIntKey, LMIC.sNwkSIntKey, LMIC.frame[OFF_JA_DLSET]);
     DO_DEVDB(LMIC.netid,   netid);
     DO_DEVDB(LMIC.devaddr, devaddr);
     DO_DEVDB(LMIC.nwkKey,  nwkkey);
