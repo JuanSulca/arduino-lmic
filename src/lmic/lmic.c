@@ -213,11 +213,11 @@ static void aes_appendMic1 (xref2u1_t pdu, int len, xref2cu1_t key) {
 static int aes_verifyMic0 (xref2u1_t pdu, int len, u1_t optneg) {
     if(optneg == 0x80) {
         u1_t auxbuffer[255];
-        auxbuffer[0] = LMIC.rejoinType; //JoinRequest type
-        os_getJoinEui(auxbuffer+1);
-        os_wlsbf2(auxbuffer+9, LMIC.devNonce-1);
-        os_copyMem(auxbuffer+1+8+2,pdu, len);
-        os_copyMem(AESkey,LMIC.jSIntKey,16);
+        auxbuffer[0] = LMIC.rejoinType; // JoinRequest type
+        os_getJoinEui(auxbuffer+1); // Join EUI
+        os_wlsbf2(auxbuffer+9, LMIC.devNonce-1); // DevNonce
+        os_copyMem(auxbuffer+1+8+2,pdu, len); // MHDR | JoinNonce | NetID | DevAddr | DLSettings | RxDelay | CFList
+        os_copyMem(AESkey, LMIC.jSIntKey, 16);
         return os_aes(AES_MIC|AES_MICNOAUX, auxbuffer, len+1+8+2) == os_rmsbf4(pdu+len);
     }
     else
@@ -289,7 +289,7 @@ static void aes_sessKeys (u2_t devnonce, xref2cu1_t joinNonce, xref2u1_t nwkSEnc
 static void aes_joinKeys(xref2u1_t jSIntKey, xref2u1_t jSEncKey) {
     os_clearMem(jSIntKey, 16);
     jSIntKey[0] = 0x06;
-    os_getDevEui(jSIntKey+1+LEN_ARTNONCE);
+    os_getDevEui(jSIntKey+1);
     os_copyMem(jSEncKey, jSIntKey, 16);
     jSEncKey[0] = 0x05;
     os_getNwkKey(AESkey);
@@ -1700,7 +1700,7 @@ static bit_t processJoinAccept (void) {
                            e_.info2  = hdr + (dlen<<8)));
         return processJoinAccept_badframe();
     }
-    if( (LMIC.opmode & OP_REJOIN) == 0 ) { //when it is rejoining
+    if( (LMIC.opmode & OP_REJOIN) == 0 ) { //when it is rejoining // FIX: Change the way it knows it is a rejoin
         aes_encrypt_rejoin(LMIC.frame+1, dlen-1); //decrypt message
     } else { //when is joining
         aes_joinKeys(LMIC.jSIntKey, LMIC.jSEncKey);
