@@ -1706,7 +1706,7 @@ static bit_t processJoinAccept (void) {
         aes_joinKeys(LMIC.jSIntKey, LMIC.jSEncKey);
         aes_encrypt(LMIC.frame+1, dlen-1); //decrypt message
     }
-    if( !aes_verifyMic0(LMIC.frame, dlen-4, LMIC.frame[OFF_JA_DLSET] && 0x80) ) {
+    if( !aes_verifyMic0(LMIC.frame, dlen-4, LMIC.frame[10] && 0x80) ) {
         EV(specCond, ERR, (e_.reason = EV::specCond_t::JOIN_BAD_MIC,
                            e_.info   = mic));
         return processJoinAccept_badframe();
