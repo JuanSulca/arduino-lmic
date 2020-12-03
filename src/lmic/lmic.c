@@ -212,6 +212,8 @@ static void aes_appendMic1 (xref2u1_t pdu, int len, xref2cu1_t key) {
 
 static int aes_verifyMic0 (xref2u1_t pdu, int len, u1_t optneg) {
     if(optneg == 0x80) {
+        printf("LoRaWAN 1.1\n");
+        printf("len = %d\n", len);
         u1_t auxbuffer[255];
         auxbuffer[0] = LMIC.rejoinType; // JoinRequest type
         os_getJoinEui(auxbuffer+1); // Join EUI
@@ -1681,11 +1683,13 @@ static bit_t processJoinAccept (void) {
         // we shouldn't be here. just drop the frame, but clean up txrxpend.
         return processJoinAccept_badframe();
     }
+    printf("passed opmode validation\n");
 
     if( LMIC.dataLen == 0 ) {
         // we didn't get any data and we're in slot 2. So... there's no join frame.
         return processJoinAccept_nojoinframe();
     }
+    printf("passed datalen validation\n");
 
     u1_t hdr  = LMIC.frame[0];
     u1_t dlen = LMIC.dataLen;
@@ -1700,17 +1704,21 @@ static bit_t processJoinAccept (void) {
                            e_.info2  = hdr + (dlen<<8)));
         return processJoinAccept_badframe();
     }
+    printf("passed ifs dlen\n");
     if( (LMIC.opmode & OP_REJOIN) == 0 ) { //when it is rejoining // FIX: Change the way it knows it is a rejoin
         aes_encrypt_rejoin(LMIC.frame+1, dlen-1); //decrypt message
     } else { //when is joining
+        printf("getting keys\n");
         aes_joinKeys(LMIC.jSIntKey, LMIC.jSEncKey);
+        printf("encrypting mic\n");
         aes_encrypt(LMIC.frame+1, dlen-1); //decrypt message
     }
-    if( !aes_verifyMic0(LMIC.frame, dlen-4, LMIC.frame[10] && 0x80) ) {
+    if( !aes_verifyMic0(LMIC.frame, dlen-4, LMIC.frame[OFF_JA_DLSET] && 0x80) ) {
         EV(specCond, ERR, (e_.reason = EV::specCond_t::JOIN_BAD_MIC,
                            e_.info   = mic));
         return processJoinAccept_badframe();
     }
+    printf("mic ok!\n");
 
     u4_t addr = os_rlsbf4(LMIC.frame+OFF_JA_DEVADDR);
     LMIC.devaddr = addr;
@@ -2925,6 +2933,7 @@ void LMIC_shutdown (void) {
 // But it's also called at frame-count rollover; in that case we have
 // to ensure that the user callback pointers are not clobbered.
 void LMIC_reset (void) {
+    printf("reseting.........\n");
     EV(devCond, INFO, (e_.reason = EV::devCond_t::LMIC_EV,
                        e_.eui    = MAIN::CDEV->getEui(),
                        e_.info   = EV_RESET));
