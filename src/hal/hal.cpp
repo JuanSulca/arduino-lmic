@@ -377,6 +377,10 @@ static ssize_t uart_putchar (void *, const char *buf, size_t len) {
     return LMIC_PRINTF_TO.write((const uint8_t *)buf, len);
 }
 
+static void logStuff(String data) {
+    LMIC_PRINTF_TO.println(data);
+}
+
 static cookie_io_functions_t functions =
  {
      .read = NULL,
