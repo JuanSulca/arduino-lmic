@@ -31,6 +31,7 @@
 //! \file
 #define LMIC_DR_LEGACY 0
 #include "lmic_bandplan.h"
+#include "util.h"
 
 #if defined(DISABLE_BEACONS) && !defined(DISABLE_PING)
 #error Ping needs beacon tracking
@@ -1681,13 +1682,13 @@ static bit_t processJoinAccept (void) {
         // we shouldn't be here. just drop the frame, but clean up txrxpend.
         return processJoinAccept_badframe();
     }
-    logStuff("after validation state");
+    printStuff("after validation state");
 
     if( LMIC.dataLen == 0 ) {
         // we didn't get any data and we're in slot 2. So... there's no join frame.
         return processJoinAccept_nojoinframe();
     }
-    logStuff("after validation len");
+    printStuff("after validation of len");
 
     u1_t hdr  = LMIC.frame[0];
     u1_t dlen = LMIC.dataLen;
@@ -1705,6 +1706,7 @@ static bit_t processJoinAccept (void) {
     if( (LMIC.opmode & OP_REJOIN) == 0 ) { //when it is rejoining // FIX: Change the way it knows it is a rejoin
         aes_encrypt_rejoin(LMIC.frame+1, dlen-1); //decrypt message
     } else { //when is joining
+        printStuff("about to generate join keys");
         aes_joinKeys(LMIC.jSIntKey, LMIC.jSEncKey);
         aes_encrypt(LMIC.frame+1, dlen-1); //decrypt message
     }
@@ -1713,6 +1715,7 @@ static bit_t processJoinAccept (void) {
                            e_.info   = mic));
         return processJoinAccept_badframe();
     }
+    printStuff("after mic");
 
     u4_t addr = os_rlsbf4(LMIC.frame+OFF_JA_DEVADDR);
     LMIC.devaddr = addr;
