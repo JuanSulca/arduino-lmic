@@ -2015,6 +2015,12 @@ static bit_t buildDataFrame (void) {
         end += 2;
     }
 
+    if ( LMIC.pend_resetInd == 1 ) {
+        LMIC.frame[end+0] = MCMD_ResetInd;
+        LMIC.frame[end+1] = 0x0001;
+        end += 2;
+    }
+
 #if !defined(DISABLE_MCMD_RXParamSetupReq)
     // per 5.4, RxParamSetupAns is sticky.
     if (LMIC.dn2Ans) {
