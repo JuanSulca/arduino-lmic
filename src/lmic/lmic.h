@@ -572,6 +572,7 @@ struct lmic_t {
     s1_t        lbt_dbmax;      // max permissible dB on our channel (eg -80)
 
     u1_t        pend_resetInd;
+    u1_t        pend_rekeyInd;
     u1_t        txChnl;          // channel for next TX
     u1_t        globalDutyRate;  // max rate: 1/2^k
 

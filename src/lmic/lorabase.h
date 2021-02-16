@@ -499,6 +499,7 @@ enum {
 // MAC uplink commands   downwlink too
 enum {
     // Class A
+    MCMD_ResetInd = 0x01,
     MCMD_LinkCheckReq = 0x02,       // -
     MCMD_LinkADRAns = 0x03,         // u1:7-3:RFU, 3/2/1: pow/DR/Ch ACK
     MCMD_DutyCycleAns = 0x04,       // -
@@ -509,6 +510,7 @@ enum {
     MCMD_TxParamSetupAns = 0x09,    // -
     MCMD_DlChannelAns = 0x0A,       // u1: [7-2]:RFU 1:exists 0:OK
     MCMD_DeviceTimeReq = 0x0D,      // -
+    MCMD_RekeyInd = 0x0B,
 
     // Class B
     MCMD_PingSlotInfoReq = 0x10,    // u1: 7=RFU, 6-4:interval, 3-0:datarate
@@ -520,7 +522,6 @@ enum {
 // MAC downlink commands
 enum {
     // Class A
-    MCMD_ResetInd = 0x01,
     MCMD_ResetConf = 0x01,
     MCMD_LinkCheckAns = 0x02,       // u1:margin 0-254,255=unknown margin / u1:gwcnt         LinkCheckReq
     MCMD_LinkADRReq = 0x03,         // u1:DR/TXPow, u2:chmask, u1:chpage/repeat
@@ -532,6 +533,7 @@ enum {
     MCMD_TxParamSetupReq = 0x09,    // u1: [7-6]:RFU [5:4]: dl dwell/ul dwell [3:0] max EIRP
     MCMD_DlChannelReq = 0x0A,       // u1: channel, u3: frequency
     MCMD_DeviceTimeAns = 0x0D,      // u4: seconds since epoch, u1: fractional second
+    MCMD_RekeyConf = 0x0B,
 
     // Class B
     MCMD_PingSlotInfoAns = 0x10,    // -
