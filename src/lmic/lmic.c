@@ -155,7 +155,7 @@ static void micB0 (u4_t devaddr, u4_t seqno, int dndir, int len, u1_t ack, u2_t 
     os_clearMem(AESaux,16);
     AESaux[0] = 0x49;
     if(ack == 0x32 && dndir) {
-        os_wlsbf2(AESaux+1, seqno % 0x10000);
+        os_wlsbf2(AESaux+1, LMIC.fCntUp % 0x10000);
     }
     AESaux[5]  = dndir?1:0;
     os_wlsbf4(AESaux+ 6,devaddr);
@@ -167,7 +167,7 @@ static void micB1 (u4_t devaddr, u4_t seqno, int dndir, int len, u1_t ack, u2_t 
     os_clearMem(AESaux,16);
     AESaux[0]  = 0x49;
     if(ack == 0x32) {
-        os_wlsbf2(AESaux+1, seqno % 0x10000);
+        os_wlsbf2(AESaux+1, LMIC.dnCntToAck % 0x10000);
     }
     AESaux[3] = LMIC.datarate; //TxDr
     AESaux[4] = LMIC.txChnl; //TxCh
@@ -703,6 +703,7 @@ static void stateJustJoined (bit_t abp) {
         LMIC.rejoinCnt   = 0;
     }
     LMIC.dnConf      = LMIC.lastDnConf  = LMIC.adrChanged = 0;
+    LMIC.dnCntToAck = -1;
     LMIC.upRepeatCount = LMIC.upRepeat = 0;
 #if !defined(DISABLE_MCMD_RXParamSetupReq)
     LMIC.dn2Ans      = 0;
@@ -1403,6 +1404,7 @@ static bit_t decodeFrame (void) {
         LMICOS_logEventUint32("decodeFrame: Retransmit confimed accepted", ((u4_t)seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
         replayConf = 1;
         LMIC.dnConf = FCT_ACK;
+        LMIC.dnCntToAck = seqno;
     }
     else {
         if( seqnoDiff > LMICbandplan_MAX_FCNT_GAP) {
@@ -1420,6 +1422,8 @@ static bit_t decodeFrame (void) {
         DO_DEVDB(LMIC.aFCntDown,aFCntDown);
         // DN frame requested confirmation - provide ACK once with next UP frame
         LMIC.dnConf = LMIC.lastDnConf = (ftype == HDR_FTYPE_DCDN ? FCT_ACK : 0);
+        if(ftype == HDR_FTYPE_DCDN)
+            LMIC.dnCntToAck = seqno;
         if (LMIC.dnConf)
             LMICOS_logEventUint32("decodeFrame: Confirmed downlink", ((u4_t)seqno << 16) | (LMIC.lastDnConf << 8) | (ftype << 0));
     }
@@ -2203,6 +2207,7 @@ static void startScan (void) {
         return;
     // Cancel onging TX/RX transaction
     LMIC.txCnt = LMIC.dnConf = LMIC.bcninfo.flags = 0;
+    LMIC.dnCntToAck = -1;
     LMIC.opmode = (LMIC.opmode | OP_SCAN) & ~(OP_TXRXPEND);
     LMICbandplan_setBcnRxParams();
     LMIC.rxtime = LMIC.bcninfo.txtime = os_getTime() + sec2osticks(BCN_INTV_sec+1);

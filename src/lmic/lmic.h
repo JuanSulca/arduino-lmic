@@ -611,6 +611,7 @@ struct lmic_t {
     u1_t        jSEncKey[16];
 
     u1_t        dnConf;       // dn frame confirm pending: LORA::FCT_ACK or 0
+    u4_t        dnCntToAck;
     u1_t        lastDnConf;   // downlink with seqnoDn-1 requested confirmation
     u1_t        adrChanged;
 
