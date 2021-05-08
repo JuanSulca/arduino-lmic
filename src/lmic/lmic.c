@@ -154,8 +154,8 @@ u2_t os_crc16 (xref2cu1_t data, uint len) {
 static void micB0 (u4_t devaddr, u4_t seqno, int dndir, int len, u1_t ack, u2_t fcnt) {
     os_clearMem(AESaux,16);
     AESaux[0] = 0x49;
-    if(ack == 0x32 && dndir) {
-        os_wlsbf2(AESaux+1, LMIC.fCntUp % 0x10000);
+    if(dndir && ack) {
+        os_wlsbf2(AESaux+1, (LMIC.fCntUp-1) % 0x10000);
     }
     AESaux[5]  = dndir?1:0;
     os_wlsbf4(AESaux+ 6,devaddr);
@@ -166,7 +166,7 @@ static void micB0 (u4_t devaddr, u4_t seqno, int dndir, int len, u1_t ack, u2_t 
 static void micB1 (u4_t devaddr, u4_t seqno, int dndir, int len, u1_t ack, u2_t fcnt) {
     os_clearMem(AESaux,16);
     AESaux[0]  = 0x49;
-    if(ack == 0x32) {
+    if(ack) {
         os_wlsbf2(AESaux+1, LMIC.dnCntToAck % 0x10000);
     }
     AESaux[3] = LMIC.datarate; //TxDr
@@ -179,7 +179,7 @@ static void micB1 (u4_t devaddr, u4_t seqno, int dndir, int len, u1_t ack, u2_t 
 
 
 static int aes_verifyMic (xref2cu1_t key, u4_t devaddr, u4_t seqno, int dndir, xref2u1_t pdu, int len) {
-    u1_t ack = pdu[5] & 0x20;
+    u1_t ack = (pdu[5] & 0x20) != 0 ? 1 : 0;
     u2_t fcnt = os_rlsbf2(pdu+6);
     micB0(devaddr, seqno, dndir, len, ack, fcnt);
     os_copyMem(AESkey,key,16);
@@ -188,7 +188,7 @@ static int aes_verifyMic (xref2cu1_t key, u4_t devaddr, u4_t seqno, int dndir, x
 
 
 static void aes_appendMic (u4_t devaddr, u4_t seqno, int dndir, xref2u1_t pdu, int len) {
-    u1_t ack = pdu[5] & 0x20;
+    u1_t ack = (pdu[5] & 0x20) != 0 ? 1 : 0;
     u2_t fcnt = os_rlsbf2(pdu+6);
     micB1(devaddr, seqno, dndir, len, ack, fcnt);
     os_copyMem(AESkey,LMIC.sNwkSIntKey,16);
@@ -213,10 +213,8 @@ static void aes_appendMic1 (xref2u1_t pdu, int len, xref2cu1_t key) {
 
 
 static int aes_verifyMic0 (xref2u1_t pdu, int len, u1_t optneg) {
-    printInt(optneg);
     if(optneg == 0x80) {
         printStuff("v1.1 mic");
-        printInt(LMIC.devNonce-1);
         u1_t auxbuffer[255];
         os_clearMem(auxbuffer, 16);
         auxbuffer[0] = LMIC.rejoinType; // JoinRequest type
@@ -1737,10 +1735,8 @@ static bit_t processJoinAccept (void) {
     if( !aes_verifyMic0(LMIC.frame, dlen-4, LMIC.frame[11] & 0x80) ) {
         EV(specCond, ERR, (e_.reason = EV::specCond_t::JOIN_BAD_MIC,
                            e_.info   = mic));
-        printStuff("bad mic");
         return processJoinAccept_badframe();
     }
-    printStuff("after mic");
 
     u4_t addr = os_rlsbf4(LMIC.frame+OFF_JA_DEVADDR);
     LMIC.devaddr = addr;
