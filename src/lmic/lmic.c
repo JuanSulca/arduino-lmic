@@ -150,7 +150,6 @@ u2_t os_crc16 (xref2cu1_t data, uint len) {
 // ================================================================================
 // BEG AES
 
-//TODO: check micB0 for uplink vs downlink
 static void micB0 (u4_t devaddr, u4_t seqno, int dndir, int len, u1_t ack, u2_t fcnt) {
     os_clearMem(AESaux,16);
     AESaux[0] = 0x49;
@@ -688,17 +687,16 @@ static void resetJoinParams(void) {
 }
 
 static void stateJustJoined (bit_t abp) {
+    u1_t devRestarded = os_deviceResterted();
     // TODO: Restore counters for ABP
-    if(abp) {
-        LMIC.fCntUp      = 0;
-        LMIC.nFCntDown   = 0;
-        LMIC.aFCntDown   = 0;
-        LMIC.rejoinCnt   = 0;
+    if(abp && devRestarded) {
+        os_getFCntUp(&LMIC.fCntUp);
+        os_getNFCntDown(&LMIC.nFCntDown);
+        os_getAFCntDown(&LMIC.aFCntDown);
     } else {
         LMIC.fCntUp      = 0;
         LMIC.nFCntDown   = 0;
         LMIC.aFCntDown   = 0;
-        LMIC.rejoinCnt   = 0;
     }
     LMIC.dnConf      = LMIC.lastDnConf  = LMIC.adrChanged = 0;
     LMIC.dnCntToAck = -1;
@@ -1418,6 +1416,8 @@ static bit_t decodeFrame (void) {
         *seqnoP = seqno+1;  // next number to be expected
         DO_DEVDB(LMIC.nFCntDown,nFCntDown);
         DO_DEVDB(LMIC.aFCntDown,aFCntDown);
+        os_saveAFCntDown(LMIC.aFCntDown);
+        os_saveNFCntDown(LMIC.nFCntDown);
         // DN frame requested confirmation - provide ACK once with next UP frame
         LMIC.dnConf = LMIC.lastDnConf = (ftype == HDR_FTYPE_DCDN ? FCT_ACK : 0);
         if(ftype == HDR_FTYPE_DCDN)
@@ -1475,7 +1475,7 @@ static bit_t decodeFrame (void) {
         // Handle payload only if not a replay
         // Decrypt payload - if any
         if( port >= 0  &&  pend-poff > 0 ) {
-            aes_cipher(port <= 0 ? LMIC.nwkKey : LMIC.artKey, LMIC.devaddr, seqno, /*dn*/1, d+poff, pend-poff);
+            aes_cipher(port <= 0 ? LMIC.nwkSEncKey : LMIC.appSKey, LMIC.devaddr, seqno, /*dn*/1, d+poff, pend-poff);
             if (port == 0) {
                 // this is a mac command. scan the options.
 #if LMIC_DEBUG_LEVEL > 0
@@ -1741,8 +1741,12 @@ static bit_t processJoinAccept (void) {
     u4_t addr = os_rlsbf4(LMIC.frame+OFF_JA_DEVADDR);
     LMIC.devaddr = addr;
     LMIC.netid = os_rlsbf4(&LMIC.frame[OFF_JA_NETID]) & 0xFFFFFF;
-    LMIC.joinNonce = os_rlsbf4(&LMIC.frame[1]) & 0xFFFFFF;
-    //TODO: Store joinNonce, devaddr & netid
+    u2_t tempJoinNonce = os_rlsbf4(&LMIC.frame[1]) & 0xFFFFFF;
+    if (tempJoinNonce < LMIC.joinNonce) {
+        return processJoinAccept_badframe();
+    }
+    LMIC.joinNonce = tempJoinNonce;
+    os_saveJoinNonce(LMIC.joinNonce);
 
     // initDefaultChannels(0) for EU-like, nothing otherwise
     LMICbandplan_joinAcceptChannelClear();
@@ -1767,14 +1771,12 @@ static bit_t processJoinAccept (void) {
     // already incremented when JOIN REQ got sent off
     //u1_t dl_setting = LMIC.frame[10];
     //LMIC.frame[0];
-    aes_sessKeys(LMIC.devNonce-1, &LMIC.frame[OFF_JA_ARTNONCE], LMIC.nwkKey, LMIC.appSKey, LMIC.fNwkSIntKey, LMIC.sNwkSIntKey, LMIC.frame[OFF_JA_DLSET]);
+    aes_sessKeys(LMIC.devNonce-1, &LMIC.frame[OFF_JA_ARTNONCE], LMIC.nwkSEncKey, LMIC.appSKey, LMIC.fNwkSIntKey, LMIC.sNwkSIntKey, LMIC.frame[OFF_JA_DLSET]);
     DO_DEVDB(LMIC.netid,   netid);
     DO_DEVDB(LMIC.devaddr, devaddr);
-    DO_DEVDB(LMIC.nwkKey,  nwkkey);
-    DO_DEVDB(LMIC.artKey,  artkey);
     DO_DEVDB(LMIC.fNwkSIntKey,  fNwkSIntKey);
     DO_DEVDB(LMIC.sNwkSIntKey,  sNwkSIntKey);
-
+    
     EV(joininfo, INFO, (e_.arteui  = MAIN::CDEV->getArtEui(),
                         e_.deveui  = MAIN::CDEV->getEui(),
                         e_.devaddr = LMIC.devaddr,
@@ -2105,6 +2107,7 @@ static bit_t buildDataFrame (void) {
     if( LMIC.txCnt == 0 && LMIC.upRepeatCount == 0 ) {
         LMIC.fCntUp += 1;
         DO_DEVDB(LMIC.fCntUp,fCntUp);
+        os_saveFCntUp(LMIC.fCntUp);
     } else {
         LMICOS_logEventUint32("retransmit", ((u4_t)LMIC.frame[OFF_DAT_FCT] << 24u) | ((u4_t)LMIC.txCnt << 16u) | (LMIC.upRepeatCount << 8u) | (LMIC.upRepeat<<0u));
         EV(devCond, INFO, (e_.reason = EV::devCond_t::RE_TX,
@@ -2285,8 +2288,8 @@ static void buildJoinRequest (u1_t ftype) { //HERE!!!!
     LMIC.dataLen = LEN_JR;
     LMIC.devNonce++;
     LMIC.rejoinType = 0xFF;
-    //TODO: Store devNonce here
     DO_DEVDB(LMIC.devNonce,devNonce);
+    os_saveDevNonce(LMIC.devNonce);
 }
 
 // send a rejoin request of type 0, 1, 2
@@ -2803,7 +2806,6 @@ static void engineUpdate_inner (void) {
                     // otherwise we need to check feasibility.
                     txdr = lowerDR(txdr, LMIC.rejoinCnt);
 #endif
-                    buildRejoinRequest(LMIC.rejoinType);
                 } else {
                     ftype = HDR_FTYPE_JREQ;
                     buildJoinRequest(ftype);
@@ -2990,7 +2992,14 @@ void LMIC_reset (void) {
     } while (0);
 
     // LMIC.devaddr      =  0;      // true from os_clearMem().
-    LMIC.devNonce     =  0;// 0 for first time in LoRaWAN v1.1
+    u1_t devRestarded = os_deviceResterted();
+    if(devRestarded != 0) {
+        os_getDevNonce(&LMIC.devNonce);
+        os_getJoinNonce(&LMIC.joinNonce);
+    } else {
+        LMIC.devNonce     =  0;// 0 for first time in LoRaWAN v1.1
+        LMIC.joinNonce    =  0;
+    }
     LMIC.opmode       =  OP_NONE;
     LMIC.errcr        =  CR_4_5;
     LMIC.adrEnabled   =  FCT_ADREN;
@@ -3010,6 +3019,7 @@ void LMIC_reset (void) {
     LMICbandplan_resetDefaultChannels();
     DO_DEVDB(LMIC.devaddr,      devaddr);
     DO_DEVDB(LMIC.devNonce,     devNonce);
+    os_saveDevNonce(LMIC.devNonce);
     DO_DEVDB(LMIC.dn2Dr,        dn2Dr);
     DO_DEVDB(LMIC.dn2Freq,      dn2Freq);
 #if !defined(DISABLE_PING)
@@ -3197,10 +3207,11 @@ void LMIC_tryRejoin (u1_t rejoinType) {
 //! \param netid a 24 bit number describing the network id this device is using
 //! \param devaddr the 32 bit session address of the device. It is strongly recommended
 //!    to ensure that different devices use different numbers with high probability.
-//! \param nwkKey  the 16 byte network session key used for message integrity.
+//! \param fNwkSIntKey  the 16 byte forwarding network session key used for message integrity.
 //!     If NULL the caller has copied the key into `LMIC.nwkKey` before.
-//! \param artKey  the 16 byte application router session key used for message confidentiality.
-//!     If NULL the caller has copied the key into `LMIC.artKey` before.
+//! \param sNwkSIntKey  the 16 byte serving network session key used for message integrity.
+//! \param nwkSEncKey  the 16 byte network session key used for message encryption.
+//! \param appSKey  the 16 byte application session key used for message confidentiality.
 
 // TODO(tmm@mcci.com) we ought to also save the channels that were returned by the
 // join accept; right now this has to be done by the caller (or it doesn't get done).
@@ -3235,6 +3246,8 @@ void LMIC_setSession (u4_t netid, devaddr_t devaddr, xref2u1_t fNwkSIntKey, xref
     DO_DEVDB(LMIC.fCntUp, fCntUp);
     DO_DEVDB(LMIC.nFCntDown, nFCntDown);
     DO_DEVDB(LMIC.aFCntDown, aFCntDown);
+    os_saveAFCntDown(LMIC.aFCntDown);
+    os_saveNFCntDown(LMIC.nFCntDown);
 }
 
 // Enable/disable link check validation.

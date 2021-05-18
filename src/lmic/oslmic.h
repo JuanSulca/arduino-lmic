@@ -198,6 +198,40 @@ void os_getJoinEui (xref2u1_t buf); // joinEUI
 #ifndef os_getDevEui // devEUI
 void os_getDevEui (xref2u1_t buf);
 #endif
+// Function prototypes to save and get counter from persistent memory
+#ifndef os_saveFCntUp // save FCntUp from persistent memory
+void os_saveFCntUp (u4_t cntr);
+#endif
+#ifndef os_getFCntUp // get FCntUp from persistent memory
+void os_getFCntUp (u4_t* buf);
+#endif
+#ifndef os_saveNFCntDown // save nFCntDown from persistent memory
+void os_saveNFCntDown (u4_t buf);
+#endif
+#ifndef os_getNFCntDown // get nFCntDown from persistent memory
+void os_getNFCntDown (u4_t* buf);
+#endif
+#ifndef os_saveAFCntDown // save aFCntDown from persistent memory
+void os_saveAFCntDown (u4_t buf);
+#endif
+#ifndef os_getAFCntDown // get aFCntDown from persistent memory
+void os_getAFCntDown (u4_t* buf);
+#endif
+#ifndef os_saveDevNonce // save devNonce from persistent memory
+void os_saveDevNonce (u2_t buf);
+#endif
+#ifndef os_getDevNonce // get devNonce from persistent memory
+void os_getDevNonce (u2_t* buf);
+#endif
+#ifndef os_saveJoinNonce // save JoinNonce from persistent memory
+void os_saveJoinNonce (u2_t buf);
+#endif
+#ifndef os_getJoinNonce // get JoinNonce from persistent memory
+void os_getJoinNonce (u2_t* buf);
+#endif
+#ifndef os_deviceResterted // get if device restarted; 0 for no; 1 for yes
+u1_t os_deviceResterted ();
+#endif
 #ifndef os_setCallback
 void os_setCallback (xref2osjob_t job, osjobcb_t cb);
 #endif
